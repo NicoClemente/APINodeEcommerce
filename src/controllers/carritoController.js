@@ -1,5 +1,36 @@
-import Joi from 'joi';
 import Carrito from '../models/carrito.js';
+
+function validarProductoEnCarrito({ productoId, cantidad }) {
+  const errores = [];
+
+  if (!productoId || typeof productoId !== 'string') {
+    errores.push('El ID del producto es requerido y debe ser una cadena de texto.');
+  }
+
+  if (cantidad === undefined || !Number.isInteger(cantidad) || cantidad < 1) {
+    errores.push('La cantidad es requerida y debe ser un número entero mayor que cero.');
+  }
+
+  return errores;
+}
+
+function validarDireccionEntrega({ calle, ciudad, codigoPostal }) {
+  const errores = [];
+
+  if (!calle || typeof calle !== 'string') {
+    errores.push('La calle es requerida y debe ser una cadena de texto.');
+  }
+
+  if (!ciudad || typeof ciudad !== 'string') {
+    errores.push('La ciudad es requerida y debe ser una cadena de texto.');
+  }
+
+  if (!codigoPostal || typeof codigoPostal !== 'string') {
+    errores.push('El código postal es requerido y debe ser una cadena de texto.');
+  }
+
+  return errores;
+}
 
 class CarritoController {
   async getCarrito(req, res) {
@@ -10,34 +41,23 @@ class CarritoController {
       res.status(500).json({ error: 'Error al obtener el carrito' });
     }
   }
-  
 
   async agregarAlCarrito(req, res) {
     const { items, direccionEntrega, total } = req.body;
 
-    const productoSchema = Joi.object({
-      productoId: Joi.string().required(),
-      cantidad: Joi.number().integer().min(1).default(1),
-    });
+    const erroresItems = items.reduce((errores, item) => {
+      const productoErrores = validarProductoEnCarrito(item);
+      return errores.concat(productoErrores);
+    }, []);
 
-    const carritoSchema = Joi.object({
-      items: Joi.array().items(productoSchema).required(),
-      direccionEntrega: Joi.object({
-        calle: Joi.string().required(),
-        ciudad: Joi.string().required(),
-        codigoPostal: Joi.string().required(),
-      }).required(),
-      total: Joi.number().required(),
-    });
+    const erroresDireccion = validarDireccionEntrega(direccionEntrega);
+
+    if (erroresItems.length > 0 || erroresDireccion.length > 0 || !total) {
+      const erroresTotales = erroresItems.concat(erroresDireccion);
+      return res.status(400).json({ error: 'Error de validación', detalles: erroresTotales });
+    }
 
     try {
-      const validationResult = carritoSchema.validate({ items, direccionEntrega, total });
-
-      if (validationResult.error) {
-        return res.status(400).json({ error: validationResult.error.details[0].message });
-      }
-
-      // Crear un nuevo documento de carrito
       const nuevoCarrito = new Carrito({
         items,
         direccionEntrega,
@@ -54,4 +74,3 @@ class CarritoController {
 }
 
 export default new CarritoController();
-  
