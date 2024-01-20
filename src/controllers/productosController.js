@@ -1,35 +1,15 @@
+import Joi from 'joi';
 import Producto from '../models/producto.js';
 
-// Función de validación para la creación y actualización de productos
-function validarProducto({ titulo, precio, marca, categoria, descripcion, imagen }) {
-  const errores = [];
-
-  if (!titulo || typeof titulo !== 'string') {
-    errores.push('El título es requerido y debe ser una cadena de texto.');
-  }
-
-  if (precio === undefined || isNaN(precio) || precio <= 0) {
-    errores.push('El precio es requerido, debe ser un número mayor que cero.');
-  }
-
-  if (marca && typeof marca !== 'string') {
-    errores.push('La marca debe ser una cadena de texto.');
-  }
-
-  if (!categoria || typeof categoria !== 'string') {
-    errores.push('La categoría es requerida y debe ser una cadena de texto.');
-  }
-
-  if (descripcion && typeof descripcion !== 'string') {
-    errores.push('La descripción debe ser una cadena de texto.');
-  }
-
-  if (imagen && typeof imagen !== 'string') {
-    errores.push('La URL de la imagen debe ser una cadena de texto.');
-  }
-
-  return errores;
-}
+// Esquema de validación para la creación y actualización de productos
+const productoSchema = Joi.object({
+  titulo: Joi.string().required(),
+  precio: Joi.number().required(),
+  marca: Joi.string(),
+  descripcion: Joi.string(),
+  categoria: Joi.string().required(),
+  imagen: Joi.string().uri({ scheme: ['http', 'https'] }),
+});
 
 class ProductosController {
   async getAllProductos(req, res) {
@@ -56,18 +36,27 @@ class ProductosController {
   }
 
   async addProducto(req, res) {
-    const { titulo, precio, marca, categoria, descripcion, imagen } = req.body;
-
-    const errores = validarProducto({ titulo, precio, marca, categoria, descripcion, imagen });
-
-    if (errores.length > 0) {
-      return res.status(400).json({ error: 'Error de validación', detalles: errores });
-    }
-
+    const { titulo, precio, marca,categoria, descripcion, imagen } = req.body;
+    
     try {
-      const nuevoProducto = new Producto({ titulo, precio, categoria, marca, descripcion, imagen });
-      await nuevoProducto.save();
-      res.status(201).json(nuevoProducto);
+      // Validar los datos del producto con el esquema definido
+      const validationResult = productoSchema.validate({ titulo, precio, marca, categoria,descripcion, imagen }, { abortEarly: false });
+
+      if (validationResult.error) {
+        const erroresDetallados = validationResult.error.details.map((detalle) => detalle.message);
+        return res.status(400).json({ error: 'Error de validación', detalles: erroresDetallados });
+      }
+
+      // Crear una nueva instancia del modelo Producto
+      const nuevoProducto = new Producto({ titulo, precio,categoria, marca, descripcion, imagen });
+
+     // Guardar el nuevo producto en la base de datos
+    const productoGuardado = await nuevoProducto.save();
+
+    // Imprimir el resultado con console.log
+    console.log("Producto Guardado:", productoGuardado);
+
+    res.status(201).json(productoGuardado);
     } catch (error) {
       res.status(500).json({ error: 'Error al agregar el producto' });
     }
@@ -75,18 +64,21 @@ class ProductosController {
 
   async updateProducto(req, res) {
     const { id } = req.params;
-    const { titulo, precio, marca, descripcion, categoria, imagen } = req.body;
-
-    const errores = validarProducto({ titulo, precio, marca, descripcion, categoria, imagen });
-
-    if (errores.length > 0) {
-      return res.status(400).json({ error: 'Error de validación', detalles: errores });
-    }
+    const { titulo, precio, marca, descripcion,categoria, imagen } = req.body;
 
     try {
+      // Validar los datos del producto con el esquema definido
+      const validationResult = productoSchema.validate({ titulo, precio, marca, descripcion, imagen, categoria}, { abortEarly: false });
+
+      if (validationResult.error) {
+        const erroresDetallados = validationResult.error.details.map((detalle) => detalle.message);
+        return res.status(400).json({ error: 'Error de validación', detalles: erroresDetallados });
+      }
+
+      // Actualizar el producto en la base de datos
       const productoActualizado = await Producto.findByIdAndUpdate(
         id,
-        { titulo, precio, marca, descripcion, categoria, imagen },
+        { titulo, precio, marca, descripcion,categoria, imagen },
         { new: true }
       );
 
@@ -103,6 +95,7 @@ class ProductosController {
   async deleteProducto(req, res) {
     const { id } = req.params;
     try {
+      // Eliminar el producto de la base de datos
       const productoEliminado = await Producto.findByIdAndDelete(id);
 
       if (productoEliminado) {
