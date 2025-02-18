@@ -9,10 +9,10 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
-    "express": "^4.18.2",
+    "express": "^4.21.2",
     "joi": "^17.11.0",
     "mongodb": "^6.3.0",
-    "mongoose": "^6.12.5"
+    "mongoose": "^6.13.8"
   },
   "engines": {
     "node": "16.x"
