@@ -1,15 +1,17 @@
-import mercadopago from 'mercadopago';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 class PagoController {
   constructor() {
-    mercadopago.configure({
-      access_token: process.env.MERCADOPAGO_ACCESS_TOKEN
+    this.client = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
     });
   }
 
   async procesarPago(req, res) {
     try {
       const { items, total } = req.body;
+
+      const payment = new Payment(this.client);
 
       const payment_data = {
         transaction_amount: Number(total),
@@ -28,8 +30,8 @@ class PagoController {
         }
       };
 
-      const payment = await mercadopago.payment.create(payment_data);
-      res.json(payment.response);
+      const paymentResponse = await payment.create({ body: payment_data });
+      res.json(paymentResponse);
     } catch (error) {
       console.error('Error al procesar pago:', error);
       res.status(500).json({ 
@@ -42,8 +44,11 @@ class PagoController {
   async verificarEstado(req, res) {
     try {
       const { transactionId } = req.params;
-      const payment = await mercadopago.payment.get(transactionId);
-      res.json(payment.response);
+      
+      const payment = new Payment(this.client);
+      const paymentResponse = await payment.get({ id: transactionId });
+      
+      res.json(paymentResponse);
     } catch (error) {
       console.error('Error al verificar estado:', error);
       res.status(500).json({ error: 'Error al verificar estado del pago' });
