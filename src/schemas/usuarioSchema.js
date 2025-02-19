@@ -21,7 +21,8 @@ const usuarioSchema = new mongoose.Schema({
     default: 'cliente'
   }
 }, { 
-  timestamps: true 
+  timestamps: true,
+  versionKey: false
 });
 
-export default mongoose.model('Usuario', usuarioSchema);
+export default usuarioSchema;
