@@ -10,7 +10,19 @@ class CarritoController {
       res.status(500).json({ error: 'Error al obtener el carrito' });
     }
   }
-  
+
+  async getCarritoById(req, res) {
+    try {
+      const { id } = req.params;
+      const carrito = await Carrito.findById(id).populate('items.productoId');
+      if (!carrito) {
+        return res.status(404).json({ error: 'Carrito no encontrado' });
+      }
+      res.json(carrito);
+    } catch (error) {
+      res.status(500).json({ error: 'Error al obtener el carrito' });
+    }
+  }
 
   async agregarAlCarrito(req, res) {
     const { items, direccionEntrega, total } = req.body;
@@ -37,7 +49,6 @@ class CarritoController {
         return res.status(400).json({ error: validationResult.error.details[0].message });
       }
 
-      // Crear un nuevo documento de carrito
       const nuevoCarrito = new Carrito({
         items,
         direccionEntrega,
@@ -45,13 +56,24 @@ class CarritoController {
       });
 
       await nuevoCarrito.save();
-
       res.status(201).json(nuevoCarrito);
     } catch (error) {
       res.status(500).json({ error: 'Error al agregar productos al carrito' });
     }
   }
+
+  async eliminarCarrito(req, res) {
+    try {
+      const { id } = req.params;
+      const carritoEliminado = await Carrito.findByIdAndDelete(id);
+      if (!carritoEliminado) {
+        return res.status(404).json({ error: 'Carrito no encontrado' });
+      }
+      res.json({ mensaje: 'Carrito eliminado correctamente' });
+    } catch (error) {
+      res.status(500).json({ error: 'Error al eliminar el carrito' });
+    }
+  }
 }
 
 export default new CarritoController();
-  
