@@ -11,13 +11,28 @@ dotenv.config();
 
 const app = express();
 
-// Simplificar CORS
-app.use(cors({
-  origin: '*',
-  credentials: false,
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',  
+    'https://ecommerce-electronica-cs.vercel.app', 
+    'https://apinodeecommerce.onrender.com' 
+    ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Middleware para solicitudes OPTIONS
+app.options('*', cors(corsOptions));
+
+// Middleware para registrar solicitudes 
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
