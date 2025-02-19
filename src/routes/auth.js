@@ -10,7 +10,7 @@ router.post('/registro', usuarioController.registro);
 router.post('/login', usuarioController.login);
 
 // Rutas protegidas
-router.use(verifyToken); // Middleware para las siguientes rutas
+router.use(verifyToken);
 
 // Rutas solo para admin
 router.get('/usuarios', isAdmin, usuarioController.getUsuarios);
