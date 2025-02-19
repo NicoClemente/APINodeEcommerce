@@ -1,4 +1,3 @@
-// src/controllers/pagoController.js
 class PagoController {
     async procesarPago(req, res) {
       try {

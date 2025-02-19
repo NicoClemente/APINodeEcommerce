@@ -1,4 +1,3 @@
-// src/routes/auth.js
 import express from 'express';
 import usuarioController from '../controllers/usuarioController.js';
 import { verifyToken, isAdmin } from '../middleware/auth.js';
@@ -9,13 +8,22 @@ const router = express.Router();
 router.post('/registro', usuarioController.registro);
 router.post('/login', usuarioController.login);
 
-// Rutas protegidas
-router.use(verifyToken);
+// Verificar que todas las funciones del controlador existen antes de usar las rutas
+if (usuarioController.getUsuarios && 
+    usuarioController.getUsuarioById && 
+    usuarioController.updateUsuario && 
+    usuarioController.deleteUsuario) {
+    
+    // Rutas protegidas con middleware
+    router.use(verifyToken);
 
-// Rutas solo para admin
-router.get('/usuarios', isAdmin, usuarioController.getUsuarios);
-router.get('/usuarios/:id', isAdmin, usuarioController.getUsuarioById);
-router.put('/usuarios/:id', isAdmin, usuarioController.updateUsuario);
-router.delete('/usuarios/:id', isAdmin, usuarioController.deleteUsuario);
+    // Rutas admin
+    router.get('/usuarios', isAdmin, usuarioController.getUsuarios);
+    router.get('/usuarios/:id', isAdmin, usuarioController.getUsuarioById);
+    router.put('/usuarios/:id', isAdmin, usuarioController.updateUsuario);
+    router.delete('/usuarios/:id', isAdmin, usuarioController.deleteUsuario);
+} else {
+    console.error('Algunas funciones del controlador no están definidas');
+}
 
 export default router;

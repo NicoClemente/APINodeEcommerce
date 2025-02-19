@@ -12,7 +12,6 @@ class UsuarioController {
         password: Joi.string().min(6).required()
       });
 
-      // Validar datos
       const { error } = schema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -23,17 +22,14 @@ class UsuarioController {
 
       const { nombre, email, password } = req.body;
 
-      // Verificar si el usuario ya existe
       const usuarioExistente = await Usuario.findOne({ email });
       if (usuarioExistente) {
         return res.status(400).json({ error: 'El email ya está registrado' });
       }
 
-      // Hashear password
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      // Crear usuario
       const usuario = new Usuario({
         nombre,
         email,
@@ -43,7 +39,6 @@ class UsuarioController {
 
       await usuario.save();
 
-      // Crear token
       const token = jwt.sign(
         { id: usuario._id, rol: usuario.rol },
         process.env.JWT_SECRET,
@@ -72,7 +67,6 @@ class UsuarioController {
         password: Joi.string().required()
       });
 
-      // Validar datos
       const { error } = schema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -83,19 +77,16 @@ class UsuarioController {
 
       const { email, password } = req.body;
 
-      // Buscar usuario
       const usuario = await Usuario.findOne({ email });
       if (!usuario) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
 
-      // Verificar password
       const validPassword = await bcrypt.compare(password, usuario.password);
       if (!validPassword) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
 
-      // Crear token
       const token = jwt.sign(
         { id: usuario._id, rol: usuario.rol },
         process.env.JWT_SECRET,
@@ -114,6 +105,76 @@ class UsuarioController {
     } catch (error) {
       console.error('Error en login:', error);
       res.status(500).json({ error: 'Error en el servidor' });
+    }
+  }
+
+  // Funciones adicionales necesarias para las rutas de admin
+  async getUsuarios(req, res) {
+    try {
+      const usuarios = await Usuario.find().select('-password');
+      res.json(usuarios);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+      res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
+  }
+
+  async getUsuarioById(req, res) {
+    try {
+      const usuario = await Usuario.findById(req.params.id).select('-password');
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+      res.json(usuario);
+    } catch (error) {
+      console.error('Error al obtener usuario:', error);
+      res.status(500).json({ error: 'Error al obtener usuario' });
+    }
+  }
+
+  async updateUsuario(req, res) {
+    try {
+      const schema = Joi.object({
+        nombre: Joi.string(),
+        email: Joi.string().email(),
+        rol: Joi.string().valid('admin', 'cliente')
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ 
+          error: 'Error de validación', 
+          detalles: error.details[0].message 
+        });
+      }
+
+      const usuario = await Usuario.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      ).select('-password');
+
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      res.json(usuario);
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      res.status(500).json({ error: 'Error al actualizar usuario' });
+    }
+  }
+
+  async deleteUsuario(req, res) {
+    try {
+      const usuario = await Usuario.findByIdAndDelete(req.params.id);
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+      res.json({ mensaje: 'Usuario eliminado correctamente' });
+    } catch (error) {
+      console.error('Error al eliminar usuario:', error);
+      res.status(500).json({ error: 'Error al eliminar usuario' });
     }
   }
 }
