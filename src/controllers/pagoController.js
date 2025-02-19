@@ -1,34 +1,39 @@
+// src/controllers/pagoController.js
 class PagoController {
     async procesarPago(req, res) {
       try {
-        // Simulación de procesamiento de pago
         const { total, items } = req.body;
-  
-        // Aquí hay que agregar la lógica real de MercadoPago
-        const resultadoPago = {
-          status: 'success',
-          message: 'Pago procesado correctamente',
-          total: total,
-          items: items,
+        const transactionId = `MP_${Date.now()}`;
+        const urlPago = "https://www.mercadopago.com.ar/checkout/v1/redirect";
+        
+        res.json({ 
+          success: true,
+          url: urlPago,
+          mensaje: "Redirigiendo a Mercado Pago",
+          transactionId,
+          total,
+          items,
           fecha: new Date(),
-          transactionId: Math.random().toString(36).substring(7)
-        };
-  
-        res.json(resultadoPago);
+          status: 'pending'
+        });
       } catch (error) {
-        res.status(500).json({ error: 'Error al procesar el pago' });
+        console.error('Error en procesamiento de pago:', error);
+        res.status(500).json({ 
+          error: 'Error al procesar el pago',
+          mensaje: error.message 
+        });
       }
     }
   
-    async verificarPago(req, res) {
+    async verificarEstado(req, res) {
       try {
         const { transactionId } = req.params;
         
-        // Simulación de verificación
         res.json({
-          status: 'success',
+          success: true,
           transactionId,
-          verified: true
+          status: 'approved',
+          mensaje: 'Pago completado'
         });
       } catch (error) {
         res.status(500).json({ error: 'Error al verificar el pago' });

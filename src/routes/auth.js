@@ -1,3 +1,4 @@
+// src/routes/auth.js
 import express from 'express';
 import usuarioController from '../controllers/usuarioController.js';
 import { verifyToken, isAdmin } from '../middleware/auth.js';
@@ -9,9 +10,12 @@ router.post('/registro', usuarioController.registro);
 router.post('/login', usuarioController.login);
 
 // Rutas protegidas
-router.get('/usuarios', verifyToken, isAdmin, usuarioController.getUsuarios);
-router.get('/usuarios/:id', verifyToken, usuarioController.getUsuarioById);
-router.put('/usuarios/:id', verifyToken, isAdmin, usuarioController.updateUsuario);
-router.delete('/usuarios/:id', verifyToken, isAdmin, usuarioController.deleteUsuario);
+router.use(verifyToken); // Middleware para las siguientes rutas
+
+// Rutas solo para admin
+router.get('/usuarios', isAdmin, usuarioController.getUsuarios);
+router.get('/usuarios/:id', isAdmin, usuarioController.getUsuarioById);
+router.put('/usuarios/:id', isAdmin, usuarioController.updateUsuario);
+router.delete('/usuarios/:id', isAdmin, usuarioController.deleteUsuario);
 
 export default router;

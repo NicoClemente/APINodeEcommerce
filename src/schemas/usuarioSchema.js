@@ -1,3 +1,4 @@
+// src/models/usuario.js
 import mongoose from 'mongoose';
 
 const usuarioSchema = new mongoose.Schema({
@@ -24,4 +25,4 @@ const usuarioSchema = new mongoose.Schema({
   versionKey: false 
 });
 
-export default usuarioSchema;
+export default mongoose.model('Usuario', usuarioSchema);
