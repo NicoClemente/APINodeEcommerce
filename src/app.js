@@ -10,37 +10,19 @@ import pagoRoutes from "./routes/pago.js";
 dotenv.config();
 
 const app = express();
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://ecommerce-electronica-cs.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (process.env.ALLOWED_ORIGINS?.split(',').includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// Simplificar CORS
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Conectar a la base de datos
 connectDB();
 
 // Rutas
@@ -59,7 +41,7 @@ app.get('/', (req, res) => {
 
 // Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err);
   res.status(500).json({ 
     error: 'Error interno del servidor',
     mensaje: process.env.NODE_ENV === 'development' ? err.message : 'Error interno'
@@ -74,19 +56,10 @@ app.use((req, res) => {
   });
 });
 
-// Iniciar servidor
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
   console.log(`Ambiente: ${process.env.NODE_ENV}`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM recibido. Cerrando servidor...');
-  server.close(() => {
-    console.log('Servidor cerrado.');
-    process.exit(0);
-  });
 });
 
 export default app;

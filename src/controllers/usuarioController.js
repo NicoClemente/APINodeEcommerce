@@ -62,11 +62,13 @@ class UsuarioController {
 
   async login(req, res) {
     try {
+      console.log('Datos recibidos:', req.body);
+      
       const schema = Joi.object({
         email: Joi.string().email().required(),
         password: Joi.string().required()
       });
-
+  
       const { error } = schema.validate(req.body);
       if (error) {
         return res.status(400).json({ 
@@ -74,25 +76,29 @@ class UsuarioController {
           detalles: error.details[0].message 
         });
       }
-
+  
       const { email, password } = req.body;
-
+  
       const usuario = await Usuario.findOne({ email });
+      console.log('Usuario encontrado:', usuario);
+      
       if (!usuario) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
-
+  
       const validPassword = await bcrypt.compare(password, usuario.password);
       if (!validPassword) {
         return res.status(401).json({ error: 'Credenciales inválidas' });
       }
-
+  
       const token = jwt.sign(
         { id: usuario._id, rol: usuario.rol },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
+      
+      console.log('Token generado:', token);
+  
       res.json({
         token,
         usuario: {
@@ -103,7 +109,11 @@ class UsuarioController {
         }
       });
     } catch (error) {
-      console.error('Error en login:', error);
+      console.error('Error detallado en login:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       res.status(500).json({ error: 'Error en el servidor' });
     }
   }
