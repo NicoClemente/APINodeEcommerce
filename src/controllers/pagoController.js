@@ -21,49 +21,38 @@ class PagoController {
 
   procesarPago = async (req, res) => {
     try {
-      const { items, total, direccionEntrega } = req.body;
+      const { items, direccionEntrega } = req.body;
       
       if (!items?.length) {
         return res.status(400).json({ error: 'No hay items en el carrito' });
       }
-
+  
       const preference = new Preference(this.client);
       
       const preferenceData = {
         items: items.map(item => ({
-          id: item._id,
-          title: item.titulo,
-          quantity: Number(item.cantidad),
-          currency_id: "ARS",
-          unit_price: Number(item.precio),
-          description: `${item.titulo} - ElectronicaCS`
+          id: item.id,
+          title: item.title,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          currency_id: "ARS"
         })),
-        payment_methods: {
-          excluded_payment_methods: [],
-          excluded_payment_types: [],
-          installments: 12
-        },
         back_urls: {
           success: `${process.env.FRONTEND_URL}/pago-exitoso`,
           failure: `${process.env.FRONTEND_URL}/pago-fallido`,
           pending: `${process.env.FRONTEND_URL}/pago-pendiente`
         },
-        external_reference: `ORDER-${Date.now()}`,
-        notification_url: process.env.WEBHOOK_URL,
-        statement_descriptor: "ElectronicaCS",
-        binary_mode: true,
-        expires: true,
-        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        auto_return: "approved",
+        binary_mode: true
       };
-
+  
       const response = await preference.create({ body: preferenceData });
       
       return res.json({
-        preferenceId: response.id,
         init_point: response.init_point,
         sandbox_init_point: response.sandbox_init_point
       });
-
+  
     } catch (error) {
       console.error('Error procesando pago:', error);
       return res.status(500).json({ 
