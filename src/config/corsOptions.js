@@ -1,14 +1,11 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000', 
-      'http://localhost:3001',
-      'http://localhost:5173', 
-      'https://ecommerce-electronica-cs.vercel.app', 
-      'https://apinodeecommerce.onrender.com'
-    ];
-    
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -20,5 +17,4 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+export default corsOptions;
