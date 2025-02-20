@@ -1,4 +1,4 @@
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago'; // Cambiamos Payment por Preference
 
 class PagoController {
   constructor() {
@@ -9,104 +9,68 @@ class PagoController {
   initializeMercadoPago() {
     try {
       const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-      
       if (!accessToken) {
-        console.error('Mercado Pago Access Token no configurado');
-        return;
+        throw new Error('Mercado Pago Access Token no configurado');
       }
-
       this.client = new MercadoPagoConfig({ accessToken });
-      console.log('Mercado Pago client inicializado correctamente');
-    } catch (configError) {
-      console.error('Error configurando MercadoPago:', configError);
+    } catch (error) {
+      console.error('Error inicializando MercadoPago:', error);
+      throw error;
     }
   }
 
   procesarPago = async (req, res) => {
-    console.log('Solicitud de pago recibida:', JSON.stringify(req.body, null, 2));
-
-    if (!this.client) {
-      this.initializeMercadoPago();
-    }
-
-    if (!this.client) {
-      return res.status(500).json({ 
-        error: 'Error de configuración de Mercado Pago',
-        details: 'No se pudo inicializar el cliente'
-      });
-    }
-
     try {
       const { items, total, payer, direccionEntrega } = req.body;
 
       if (!items?.length) {
-        return res.status(400).json({ error: 'Lista de items inválida' });
+        return res.status(400).json({ error: 'Lista de items vacía' });
       }
 
-      if (!total || isNaN(Number(total))) {
-        return res.status(400).json({ error: 'Total inválido' });
-      }
-
-      const payment = new Payment(this.client);
+      const preference = new Preference(this.client);
       
-      const payment_data = {
-        transaction_amount: Number(total),
-        description: 'Compra en ElectronicaCS',
-        payment_method_id: 'visa',
+      const preferenceData = {
+        items: items.map(item => ({
+          id: item._id,
+          title: item.titulo,
+          quantity: item.cantidad,
+          unit_price: item.precio,
+          currency_id: "ARS"
+        })),
         payer: {
           email: payer.email,
-          identification: {
-            type: 'DNI',
-            number: '12345678'
-          },
           address: {
             zip_code: direccionEntrega.codigoPostal,
             street_name: direccionEntrega.calle,
             street_number: "123"
           }
-        }
+        },
+        back_urls: {
+          success: "https://ecommerce-electronica-cs.vercel.app/pago-exitoso",
+          failure: "https://ecommerce-electronica-cs.vercel.app/pago-fallido",
+          pending: "https://ecommerce-electronica-cs.vercel.app/pago-pendiente"
+        },
+        auto_return: "approved",
+        notification_url: process.env.WEBHOOK_URL,
+        statement_descriptor: "ElectronicaCS",
+        external_reference: new Date().getTime().toString()
       };
 
-      console.log('Datos de pago:', JSON.stringify(payment_data, null, 2));
+      const response = await preference.create({ body: preferenceData });
 
-      const response = await payment.create({ body: payment_data });
-      console.log('Respuesta de MP:', response);
-
-      res.json({
+      return res.json({
         status: 'success',
-        payment_id: response.id,
-        status: response.status,
-        detail: response.status_detail
+        preference_id: response.id,
+        init_point: response.init_point,
+        sandbox_init_point: response.sandbox_init_point
       });
 
     } catch (error) {
-      console.error('Error en procesarPago:', error);
-      res.status(500).json({ 
+      console.error('Error procesando pago:', error);
+      return res.status(500).json({ 
         error: 'Error al procesar el pago',
-        details: error.message 
+        details: error.message
       });
-    }
-  }
-
-  verificarEstado = async (req, res) => {
-    try {
-      const { transactionId } = req.params;
-      
-      if (!this.client) {
-        this.initializeMercadoPago();
-      }
-
-      if (!this.client) {
-        return res.status(500).json({ error: 'Error de configuración' });
-      }
-
-      const payment = new Payment(this.client);
-      const response = await payment.get({ id: transactionId });
-      
-      res.json(response);
-    } catch (error) {
-      console.error('Error al verificar pago:', error);
-      res.status(500).json({ error: 'Error al verificar el pago' });
     }
   }
 }
