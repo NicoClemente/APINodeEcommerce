@@ -21,37 +21,49 @@ class PagoController {
 
   procesarPago = async (req, res) => {
     try {
-      const { items, total, direccionEntrega } = req.body; // Ya no necesitamos payer
-  
+      const { items, total, direccionEntrega } = req.body;
+      
+      if (!items?.length) {
+        return res.status(400).json({ error: 'No hay items en el carrito' });
+      }
+
       const preference = new Preference(this.client);
       
       const preferenceData = {
         items: items.map(item => ({
+          id: item._id,
           title: item.titulo,
           quantity: Number(item.cantidad),
           currency_id: "ARS",
-          unit_price: Number(item.precio)
+          unit_price: Number(item.precio),
+          description: `${item.titulo} - ElectronicaCS`
         })),
-        payer: {
-          name: "Test",
-          surname: "User",
-          email: "test_user_80815074@testuser.com", // Email fijo del comprador de prueba
+        payment_methods: {
+          excluded_payment_methods: [],
+          excluded_payment_types: [],
+          installments: 12
         },
         back_urls: {
           success: `${process.env.FRONTEND_URL}/pago-exitoso`,
           failure: `${process.env.FRONTEND_URL}/pago-fallido`,
           pending: `${process.env.FRONTEND_URL}/pago-pendiente`
         },
-        auto_return: "approved"
+        external_reference: `ORDER-${Date.now()}`,
+        notification_url: process.env.WEBHOOK_URL,
+        statement_descriptor: "ElectronicaCS",
+        binary_mode: true,
+        expires: true,
+        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       };
-  
+
       const response = await preference.create({ body: preferenceData });
       
       return res.json({
-        id: response.id,
-        init_point: response.init_point
+        preferenceId: response.id,
+        init_point: response.init_point,
+        sandbox_init_point: response.sandbox_init_point
       });
-  
+
     } catch (error) {
       console.error('Error procesando pago:', error);
       return res.status(500).json({ 
@@ -67,11 +79,9 @@ class PagoController {
       
       console.log('Webhook recibido:', { type, data });
 
-      // Aquí puedes manejar diferentes tipos de notificaciones
       if (type === 'payment') {
         const { id } = data;
         console.log('ID de pago:', id);
-        // Aquí podrías actualizar el estado del pedido en tu base de datos
       }
 
       res.status(200).send('OK');
