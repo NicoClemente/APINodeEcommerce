@@ -21,16 +21,7 @@ class PagoController {
 
   procesarPago = async (req, res) => {
     try {
-      const { items, total, payer, direccionEntrega } = req.body;
-  
-      // Validación de datos
-      if (!items?.length) {
-        return res.status(400).json({ error: 'No hay items en el carrito' });
-      }
-  
-      if (!payer?.email) {
-        return res.status(400).json({ error: 'Se requiere un email de Mercado Pago' });
-      }
+      const { items, total, direccionEntrega } = req.body; // Ya no necesitamos payer
   
       const preference = new Preference(this.client);
       
@@ -44,25 +35,14 @@ class PagoController {
         payer: {
           name: "Test",
           surname: "User",
-          email: payer.email,
-          phone: {
-            area_code: "11",
-            number: "22223333"
-          },
-          address: {
-            zip_code: direccionEntrega.codigoPostal,
-            street_name: direccionEntrega.calle,
-            street_number: "123"
-          }
+          email: "test_user_80815074@testuser.com", // Email fijo del comprador de prueba
         },
         back_urls: {
           success: `${process.env.FRONTEND_URL}/pago-exitoso`,
           failure: `${process.env.FRONTEND_URL}/pago-fallido`,
           pending: `${process.env.FRONTEND_URL}/pago-pendiente`
         },
-        auto_return: "approved",
-        notification_url: process.env.WEBHOOK_URL,
-        statement_descriptor: "ElectronicaCS"
+        auto_return: "approved"
       };
   
       const response = await preference.create({ body: preferenceData });
