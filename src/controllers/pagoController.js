@@ -21,12 +21,8 @@ class PagoController {
 
   procesarPago = async (req, res) => {
     try {
-      const { items, total, payer, direccionEntrega } = req.body;
-
-      if (!items?.length) {
-        return res.status(400).json({ error: 'No hay items en el carrito' });
-      }
-
+      const { items, total, direccionEntrega } = req.body;
+  
       const preference = new Preference(this.client);
       
       const preferenceData = {
@@ -37,7 +33,13 @@ class PagoController {
           unit_price: Number(item.precio)
         })),
         payer: {
-          email: payer.email,
+          name: "Test",
+          surname: "User",
+          email: "test_user_123456789@testuser.com", // Email fijo del comprador de prueba
+          phone: {
+            area_code: "11",
+            number: "22223333"
+          },
           address: {
             zip_code: direccionEntrega.codigoPostal,
             street_name: direccionEntrega.calle,
@@ -53,14 +55,14 @@ class PagoController {
         notification_url: process.env.WEBHOOK_URL,
         statement_descriptor: "ElectronicaCS"
       };
-
+  
       const response = await preference.create({ body: preferenceData });
       
       return res.json({
         id: response.id,
         init_point: response.init_point
       });
-
+  
     } catch (error) {
       console.error('Error procesando pago:', error);
       return res.status(500).json({ 
