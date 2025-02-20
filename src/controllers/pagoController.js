@@ -15,24 +15,20 @@ class PagoController {
         return;
       }
 
-      this.client = new MercadoPagoConfig({
-        accessToken: accessToken
-      });
+      this.client = new MercadoPagoConfig({ accessToken });
       console.log('Mercado Pago client inicializado correctamente');
     } catch (configError) {
       console.error('Error configurando MercadoPago:', configError);
     }
   }
 
-  async procesarPago(req, res) {
+  procesarPago = async (req, res) => {
     console.log('Solicitud de pago recibida:', JSON.stringify(req.body, null, 2));
 
-    // Verify client initialization
     if (!this.client) {
       this.initializeMercadoPago();
     }
 
-    // Additional error check
     if (!this.client) {
       return res.status(500).json({ 
         error: 'Error de configuración de Mercado Pago',
@@ -43,123 +39,74 @@ class PagoController {
     try {
       const { items, total, payer, direccionEntrega } = req.body;
 
-      // Validation logic
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ 
-          error: 'Lista de items inválida',
-          details: 'Se requiere un arreglo de items no vacío'
-        });
+      if (!items?.length) {
+        return res.status(400).json({ error: 'Lista de items inválida' });
       }
 
-      if (!total || isNaN(Number(total)) || Number(total) <= 0) {
-        return res.status(400).json({ 
-          error: 'Total inválido',
-          details: 'El total debe ser un número positivo'
-        });
-      }
-
-      if (!payer || !payer.email) {
-        return res.status(400).json({ 
-          error: 'Información del pagador incompleta',
-          details: 'Se requiere un email de pagador válido'
-        });
-      }
-
-      // Validate delivery address
-      if (!direccionEntrega || 
-          !direccionEntrega.calle || 
-          !direccionEntrega.ciudad || 
-          !direccionEntrega.codigoPostal) {
-        return res.status(400).json({ 
-          error: 'Dirección de entrega incompleta',
-          details: 'Se requieren todos los campos de la dirección'
-        });
+      if (!total || isNaN(Number(total))) {
+        return res.status(400).json({ error: 'Total inválido' });
       }
 
       const payment = new Payment(this.client);
-
+      
       const payment_data = {
         transaction_amount: Number(total),
         description: 'Compra en ElectronicaCS',
-        payment_method_id: 'visa', 
+        payment_method_id: 'visa',
         payer: {
           email: payer.email,
+          identification: {
+            type: 'DNI',
+            number: '12345678'
+          },
           address: {
+            zip_code: direccionEntrega.codigoPostal,
             street_name: direccionEntrega.calle,
-            city: direccionEntrega.ciudad,
-            zip_code: direccionEntrega.codigoPostal
+            street_number: "123"
           }
-        },
-        additional_info: {
-          items: items.map(item => ({
-            id: item._id || 'N/A',
-            title: item.titulo || 'Producto sin título',
-            quantity: Number(item.cantidad) || 1,
-            unit_price: Number(item.precio) || 0
-          }))
         }
       };
 
-      console.log('Datos de pago procesados:', JSON.stringify(payment_data, null, 2));
+      console.log('Datos de pago:', JSON.stringify(payment_data, null, 2));
 
-      try {
-        const paymentResponse = await payment.create({ body: payment_data });
-        console.log('Respuesta de pago:', JSON.stringify(paymentResponse, null, 2));
-        
-        res.json({
-          message: 'Pago procesado exitosamente',
-          paymentDetails: paymentResponse
-        });
-      } catch (paymentCreationError) {
-        console.error('Error al crear pago con Mercado Pago:', paymentCreationError);
-        
-        res.status(500).json({ 
-          error: 'Error al procesar el pago con Mercado Pago',
-          details: {
-            message: paymentCreationError.message,
-            code: paymentCreationError.code,
-            response: paymentCreationError.response?.data || 'Sin detalles adicionales'
-          }
-        });
-      }
+      const response = await payment.create({ body: payment_data });
+      console.log('Respuesta de MP:', response);
+
+      res.json({
+        status: 'success',
+        payment_id: response.id,
+        status: response.status,
+        detail: response.status_detail
+      });
+
     } catch (error) {
-      console.error('Error inesperado en procesamiento de pago:', error);
+      console.error('Error en procesarPago:', error);
       res.status(500).json({ 
-        error: 'Error interno al procesar el pago',
-        details: {
-          message: error.message,
-          stack: error.stack
-        }
+        error: 'Error al procesar el pago',
+        details: error.message 
       });
     }
   }
 
-  async verificarEstado(req, res) {
+  verificarEstado = async (req, res) => {
     try {
       const { transactionId } = req.params;
       
-      // Verify client initialization
       if (!this.client) {
         this.initializeMercadoPago();
       }
 
       if (!this.client) {
-        return res.status(500).json({ 
-          error: 'Error de configuración de Mercado Pago',
-          details: 'No se pudo inicializar el cliente'
-        });
+        return res.status(500).json({ error: 'Error de configuración' });
       }
 
       const payment = new Payment(this.client);
-      const paymentResponse = await payment.get({ id: transactionId });
+      const response = await payment.get({ id: transactionId });
       
-      res.json(paymentResponse);
+      res.json(response);
     } catch (error) {
-      console.error('Error al verificar estado del pago:', error);
-      res.status(500).json({ 
-        error: 'Error al verificar estado del pago',
-        details: error.message 
-      });
+      console.error('Error al verificar pago:', error);
+      res.status(500).json({ error: 'Error al verificar el pago' });
     }
   }
 }
