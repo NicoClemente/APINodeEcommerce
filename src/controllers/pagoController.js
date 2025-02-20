@@ -2,6 +2,7 @@ import { MercadoPagoConfig, Payment } from 'mercadopago';
 
 class PagoController {
   constructor() {
+    this.client = null;
     this.initializeMercadoPago();
   }
 
@@ -11,37 +12,38 @@ class PagoController {
       
       if (!accessToken) {
         console.error('Mercado Pago Access Token no configurado');
-        throw new Error('Access Token de Mercado Pago no encontrado');
+        return;
       }
 
       this.client = new MercadoPagoConfig({
         accessToken: accessToken
       });
+      console.log('Mercado Pago client inicializado correctamente');
     } catch (configError) {
       console.error('Error configurando MercadoPago:', configError);
-      this.client = null;
     }
   }
 
   async procesarPago(req, res) {
-    // Verificar inicialización del cliente
+    console.log('Solicitud de pago recibida:', JSON.stringify(req.body, null, 2));
+
+    // Verify client initialization
     if (!this.client) {
       this.initializeMercadoPago();
-      
-      if (!this.client) {
-        return res.status(500).json({ 
-          error: 'Error de configuración de Mercado Pago',
-          details: 'No se pudo inicializar el cliente de Mercado Pago'
-        });
-      }
     }
 
-    console.log('Solicitud de pago recibida:', JSON.stringify(req.body, null, 2));
+    // Additional error check
+    if (!this.client) {
+      return res.status(500).json({ 
+        error: 'Error de configuración de Mercado Pago',
+        details: 'No se pudo inicializar el cliente'
+      });
+    }
 
     try {
       const { items, total, payer, direccionEntrega } = req.body;
 
-      // Validaciones exhaustivas
+      // Validation logic
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ 
           error: 'Lista de items inválida',
@@ -63,7 +65,7 @@ class PagoController {
         });
       }
 
-      // Validar dirección de entrega
+      // Validate delivery address
       if (!direccionEntrega || 
           !direccionEntrega.calle || 
           !direccionEntrega.ciudad || 
@@ -74,7 +76,6 @@ class PagoController {
         });
       }
 
-      // Crear instancia de Payment cada vez
       const payment = new Payment(this.client);
 
       const payment_data = {
@@ -112,19 +113,13 @@ class PagoController {
       } catch (paymentCreationError) {
         console.error('Error al crear pago con Mercado Pago:', paymentCreationError);
         
-        // Loguear detalles específicos del error de Mercado Pago
-        const errorDetails = {
-          message: paymentCreationError.message,
-          code: paymentCreationError.code,
-          status: paymentCreationError.status,
-          response: paymentCreationError.response?.data || 'Sin detalles adicionales'
-        };
-
-        console.error('Detalles del error de Mercado Pago:', JSON.stringify(errorDetails, null, 2));
-        
         res.status(500).json({ 
           error: 'Error al procesar el pago con Mercado Pago',
-          details: errorDetails
+          details: {
+            message: paymentCreationError.message,
+            code: paymentCreationError.code,
+            response: paymentCreationError.response?.data || 'Sin detalles adicionales'
+          }
         });
       }
     } catch (error) {
@@ -143,16 +138,16 @@ class PagoController {
     try {
       const { transactionId } = req.params;
       
-      // Verificar inicialización del cliente
+      // Verify client initialization
       if (!this.client) {
         this.initializeMercadoPago();
-        
-        if (!this.client) {
-          return res.status(500).json({ 
-            error: 'Error de configuración de Mercado Pago',
-            details: 'No se pudo inicializar el cliente de Mercado Pago'
-          });
-        }
+      }
+
+      if (!this.client) {
+        return res.status(500).json({ 
+          error: 'Error de configuración de Mercado Pago',
+          details: 'No se pudo inicializar el cliente'
+        });
       }
 
       const payment = new Payment(this.client);
