@@ -4,9 +4,8 @@ import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(verifyToken);
+router.post('/procesar', verifyToken, pagoController.procesarPago);
 
-router.post('/procesar', pagoController.procesarPago);
-router.get('/verificar/:transactionId', pagoController.verificarEstado);
+router.post('/webhook', pagoController.handleWebhook);
 
 export default router;

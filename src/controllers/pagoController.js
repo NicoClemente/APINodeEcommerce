@@ -1,4 +1,5 @@
-import { MercadoPagoConfig, Preference } from 'mercadopago'; // Cambiamos Payment por Preference
+// src/controllers/pagoController.js 
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 class PagoController {
   constructor() {
@@ -23,8 +24,9 @@ class PagoController {
     try {
       const { items, total, payer, direccionEntrega } = req.body;
 
+      // Validaciones
       if (!items?.length) {
-        return res.status(400).json({ error: 'Lista de items vacía' });
+        return res.status(400).json({ error: 'No hay items en el carrito' });
       }
 
       const preference = new Preference(this.client);
@@ -33,8 +35,8 @@ class PagoController {
         items: items.map(item => ({
           id: item._id,
           title: item.titulo,
-          quantity: item.cantidad,
-          unit_price: item.precio,
+          quantity: Number(item.cantidad),
+          unit_price: Number(item.precio),
           currency_id: "ARS"
         })),
         payer: {
@@ -46,23 +48,21 @@ class PagoController {
           }
         },
         back_urls: {
-          success: "https://ecommerce-electronica-cs.vercel.app/pago-exitoso",
-          failure: "https://ecommerce-electronica-cs.vercel.app/pago-fallido",
-          pending: "https://ecommerce-electronica-cs.vercel.app/pago-pendiente"
+          success: `${process.env.FRONTEND_URL}/pago-exitoso`,
+          failure: `${process.env.FRONTEND_URL}/pago-fallido`,
+          pending: `${process.env.FRONTEND_URL}/pago-pendiente`
         },
         auto_return: "approved",
         notification_url: process.env.WEBHOOK_URL,
         statement_descriptor: "ElectronicaCS",
-        external_reference: new Date().getTime().toString()
+        external_reference: `ORDER-${Date.now()}`
       };
 
       const response = await preference.create({ body: preferenceData });
 
       return res.json({
-        status: 'success',
-        preference_id: response.id,
-        init_point: response.init_point,
-        sandbox_init_point: response.sandbox_init_point
+        id: response.id,
+        init_point: response.init_point
       });
 
     } catch (error) {
@@ -71,6 +71,26 @@ class PagoController {
         error: 'Error al procesar el pago',
         details: error.message
       });
+    }
+  }
+
+  handleWebhook = async (req, res) => {
+    try {
+      const { query } = req;
+      const { type, data } = query;
+
+      console.log('Webhook recibido:', { type, data });
+
+      if (type === 'payment') {
+        const paymentId = data.id;
+        // Aquí puedes actualizar el estado del pedido en tu base de datos
+        console.log(`Pago ${paymentId} actualizado`);
+      }
+
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error en webhook:', error);
+      res.status(500).send('Error procesando webhook');
     }
   }
 }
