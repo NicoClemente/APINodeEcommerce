@@ -1,4 +1,3 @@
-// src/controllers/pagoController.js 
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 class PagoController {
@@ -24,7 +23,6 @@ class PagoController {
     try {
       const { items, total, payer, direccionEntrega } = req.body;
 
-      // Validaciones
       if (!items?.length) {
         return res.status(400).json({ error: 'No hay items en el carrito' });
       }
@@ -33,11 +31,10 @@ class PagoController {
       
       const preferenceData = {
         items: items.map(item => ({
-          id: item._id,
           title: item.titulo,
           quantity: Number(item.cantidad),
-          unit_price: Number(item.precio),
-          currency_id: "ARS"
+          currency_id: "ARS",
+          unit_price: Number(item.precio)
         })),
         payer: {
           email: payer.email,
@@ -54,12 +51,11 @@ class PagoController {
         },
         auto_return: "approved",
         notification_url: process.env.WEBHOOK_URL,
-        statement_descriptor: "ElectronicaCS",
-        external_reference: `ORDER-${Date.now()}`
+        statement_descriptor: "ElectronicaCS"
       };
 
       const response = await preference.create({ body: preferenceData });
-
+      
       return res.json({
         id: response.id,
         init_point: response.init_point
@@ -71,26 +67,6 @@ class PagoController {
         error: 'Error al procesar el pago',
         details: error.message
       });
-    }
-  }
-
-  handleWebhook = async (req, res) => {
-    try {
-      const { query } = req;
-      const { type, data } = query;
-
-      console.log('Webhook recibido:', { type, data });
-
-      if (type === 'payment') {
-        const paymentId = data.id;
-        // Aquí puedes actualizar el estado del pedido en tu base de datos
-        console.log(`Pago ${paymentId} actualizado`);
-      }
-
-      res.status(200).send('OK');
-    } catch (error) {
-      console.error('Error en webhook:', error);
-      res.status(500).send('Error procesando webhook');
     }
   }
 }
