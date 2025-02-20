@@ -26,15 +26,14 @@ class PagoController {
       if (!items?.length) {
         return res.status(400).json({ error: 'No hay items en el carrito' });
       }
-
+  
       const preference = new Preference(this.client);
       
-      // Configuración mínima de preferencia
       const preferenceData = {
         items: items.map(item => ({
-          title: item.titulo,
-          unit_price: Number(item.precio),
-          quantity: Number(item.cantidad),
+          title: item.title,
+          unit_price: Number(item.unit_price),
+          quantity: Number(item.quantity),
           currency_id: "ARS"
         })),
         back_urls: {
@@ -44,18 +43,20 @@ class PagoController {
         },
         auto_return: "approved"
       };
-
+  
+      console.log('Preference Data:', JSON.stringify(preferenceData, null, 2));
+  
       const response = await preference.create({ body: preferenceData });
       
       return res.json({
         init_point: response.init_point
       });
-
+  
     } catch (error) {
-      console.error('Error procesando pago:', error);
+      console.error('Error procesando pago:', error.response?.data || error);
       return res.status(500).json({ 
         error: 'Error al procesar el pago',
-        details: error.message
+        details: error.response?.data || error.message
       });
     }
   }
