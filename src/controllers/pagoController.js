@@ -21,7 +21,16 @@ class PagoController {
 
   procesarPago = async (req, res) => {
     try {
-      const { items, total, direccionEntrega } = req.body;
+      const { items, total, payer, direccionEntrega } = req.body;
+  
+      // Validación de datos
+      if (!items?.length) {
+        return res.status(400).json({ error: 'No hay items en el carrito' });
+      }
+  
+      if (!payer?.email) {
+        return res.status(400).json({ error: 'Se requiere un email de Mercado Pago' });
+      }
   
       const preference = new Preference(this.client);
       
@@ -35,7 +44,7 @@ class PagoController {
         payer: {
           name: "Test",
           surname: "User",
-          email: "test_user_123456789@testuser.com", // Email fijo del comprador de prueba
+          email: payer.email,
           phone: {
             area_code: "11",
             number: "22223333"
