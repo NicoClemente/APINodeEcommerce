@@ -1,7 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import corsOptions from './config/corsOptions.js';
 import connectDB from './config/database.js';
 import productosRoutes from "./routes/productos.js";
 import carritoRoutes from "./routes/carrito.js";
@@ -12,31 +11,70 @@ dotenv.config();
 
 const app = express();
 
-// Apply CORS
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',') 
+      : [
+        'http://localhost:3000', 
+        'http://localhost:3001', 
+        'http://localhost:5173', 
+        'https://ecommerce-electronica-cs.vercel.app', 
+        'https://apinodeecommerce.onrender.com'
+      ];
+    
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.error(`Origin ${origin} not allowed by CORS`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 app.use(cors(corsOptions));
 
-// Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Middleware to log requests (for debugging)
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('Allowed Origins:', process.env.ALLOWED_ORIGINS);
+  next();
+});
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',') 
+    : [];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
   next();
 });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
 connectDB();
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/productos", productosRoutes);
 app.use("/api/carrito", carritoRoutes);
 app.use("/api/pagos", pagoRoutes);
 
-// Root route
 app.get('/', (req, res) => {
   res.json({ 
     mensaje: 'API funcionando correctamente',
@@ -44,7 +82,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err);
   res.status(500).json({ 
@@ -53,7 +90,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Ruta no encontrada',
