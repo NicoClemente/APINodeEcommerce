@@ -33,9 +33,9 @@ class PagoController {
       
       const preferenceData = {
         items: items.map(item => ({
-          title: item.titulo,
-          quantity: Number(item.cantidad),
-          unit_price: Number(item.precio),
+          title: item.title,
+          unit_price: Number(item.unit_price),
+          quantity: Number(item.quantity),
           currency_id: "ARS"
         })),
         payment_methods: {
