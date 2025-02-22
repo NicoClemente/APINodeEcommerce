@@ -60,6 +60,18 @@ class PagoController {
       });
     }
   }
+
+  handleWebhook = async (req, res) => {
+    try {
+      const { type, data } = req.query;
+      console.log('Webhook recibido:', { type, data });
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error en webhook:', error);
+      res.status(500).json({ error: 'Error procesando webhook' });
+    }
+  }
 }
+
 
 export default new PagoController();
