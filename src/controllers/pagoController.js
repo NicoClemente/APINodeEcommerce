@@ -23,7 +23,7 @@ class PagoController {
     try {
       console.log('Datos recibidos:', JSON.stringify(req.body, null, 2));
   
-      const { items, total, direccionEntrega } = req.body;
+      const { items } = req.body;
       
       if (!items?.length) {
         return res.status(400).json({ error: 'No hay items en el carrito' });
@@ -38,14 +38,10 @@ class PagoController {
           quantity: Number(item.quantity),
           currency_id: "ARS"
         })),
-        payment_methods: {
-          default_payment_method_id: "visa",
-          installments: 1
-        },
         back_urls: {
-          success: `${process.env.FRONTEND_URL}/pago-exitoso`,
-          failure: `${process.env.FRONTEND_URL}/pago-fallido`,
-          pending: `${process.env.FRONTEND_URL}/pago-pendiente`
+          success: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-exitoso`,
+          failure: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-fallido`,
+          pending: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-pendiente`
         },
         auto_return: "approved",
         binary_mode: true
@@ -58,7 +54,7 @@ class PagoController {
       console.log('MercadoPago Response:', JSON.stringify(response, null, 2));
   
       return res.json({
-        init_point: response.sandbox_init_point || response.init_point
+        init_point: response.init_point
       });
   
     } catch (error) {
@@ -81,6 +77,5 @@ class PagoController {
     }
   }
 }
-
 
 export default new PagoController();
