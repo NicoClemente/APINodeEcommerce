@@ -44,7 +44,18 @@ class PagoController {
           pending: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-pendiente`
         },
         auto_return: "approved",
-        binary_mode: true
+        binary_mode: true,
+        // Configuración para pagos como invitado
+        payment_methods: {
+          excluded_payment_methods: [],
+          excluded_payment_types: [],
+          installments: 12,  // Permite hasta 12 cuotas
+        },
+        metadata: {
+          allow_guest_checkout: true
+        },
+        statement_descriptor: "Tu Tienda Online",
+        external_reference: Date.now().toString(),
       };
   
       console.log('Preference Data:', JSON.stringify(preferenceData, null, 2));
@@ -54,7 +65,9 @@ class PagoController {
       console.log('MercadoPago Response:', JSON.stringify(response, null, 2));
   
       return res.json({
-        init_point: response.init_point
+        init_point: process.env.NODE_ENV === 'production' 
+          ? response.init_point 
+          : response.sandbox_init_point || response.init_point
       });
   
     } catch (error) {
