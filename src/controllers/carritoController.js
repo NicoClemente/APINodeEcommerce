@@ -39,6 +39,8 @@ class CarritoController {
         ciudad: Joi.string().required(),
         codigoPostal: Joi.string().required(),
       }).required(),
+        telefono: Joi.string().required(),
+        instrucciones: Joi.string().required(),
       total: Joi.number().required(),
     });
 
