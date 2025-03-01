@@ -18,7 +18,7 @@ const carritoSchema = new mongoose.Schema({
     calle: { type: String, required: true },
     ciudad: { type: String, required: true },
     codigoPostal: { type: String, required: true },
-    telefono: { type: String, required: true },
+    telefono: { type: Number, required: true },
     instrucciones: { type: String }
   },
   total: { 
