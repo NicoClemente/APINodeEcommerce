@@ -6,11 +6,17 @@ import productosRoutes from "./routes/productos.js";
 import carritoRoutes from "./routes/carrito.js";
 import authRoutes from "./routes/auth.js";
 import pagoRoutes from "./routes/pago.js";
+import uploadRoutes from "./routes/upload.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 dotenv.config();
 
 const app = express();
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Configuración CORS
 app.use(cors({
@@ -30,6 +36,7 @@ app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '../public')));
 
 connectDB();
 
@@ -38,6 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/productos", productosRoutes);
 app.use("/api/carrito", carritoRoutes);
 app.use("/api/pagos", pagoRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
