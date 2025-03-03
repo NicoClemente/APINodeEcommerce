@@ -6,7 +6,20 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configurar Cloudinary
+// Verify Cloudinary configuration
+console.log('Cloudinary Config:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET ? '***' : 'MISSING'
+});
+
+// Ensure Cloudinary is configured
+if (!process.env.CLOUDINARY_CLOUD_NAME || 
+    !process.env.CLOUDINARY_API_KEY || 
+    !process.env.CLOUDINARY_API_SECRET) {
+  console.error('Cloudinary configuration is incomplete!');
+}
+
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY, 
@@ -45,6 +58,13 @@ router.post("/image", verifyToken, isAdmin, upload.single('image'), async (req, 
       return res.status(400).json({ error: "No se ha subido ningún archivo" });
     }
 
+    // Debug logging
+    console.log('Received file:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+
     // Convertir el archivo a base64
     const fileStr = req.file.buffer.toString('base64');
     const fileType = req.file.mimetype;
@@ -52,8 +72,8 @@ router.post("/image", verifyToken, isAdmin, upload.single('image'), async (req, 
 
     // Subir a Cloudinary
     const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'productos', // Opcional: carpeta donde guardar en Cloudinary
-      resource_type: 'auto' // Detectar automáticamente el tipo de recurso
+      folder: 'productos', 
+      resource_type: 'auto' 
     });
 
     res.status(200).json({
@@ -63,13 +83,24 @@ router.post("/image", verifyToken, isAdmin, upload.single('image'), async (req, 
       message: "Imagen subida correctamente a Cloudinary"
     });
   } catch (error) {
-    console.error("Error al subir la imagen a Cloudinary:", error);
-    res.status(500).json({ error: "Error al procesar la imagen" });
+    // Detailed error logging
+    console.error("Error completo al subir la imagen a Cloudinary:", {
+      message: error.message,
+      stack: error.stack,
+      cloudinaryError: error
+    });
+
+    res.status(500).json({ 
+      error: "Error al procesar la imagen", 
+      details: error.message 
+    });
   }
 });
 
 // Manejar errores de multer
 router.use((err, req, res, next) => {
+  console.error('Multer Error:', err);
+  
   if (err instanceof multer.MulterError) {
     // Error de multer
     if (err.code === 'LIMIT_FILE_SIZE') {
