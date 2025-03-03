@@ -18,12 +18,17 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Registro de orígenes permitidos
+console.log('Orígenes CORS permitidos:', allowedOrigins);
+
 // Configuración CORS
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('Origen de la solicitud:', origin); // Añadir este log para depuración
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn('Origen no permitido:', origin); // Registro de orígenes no permitidos
       callback(new Error('No permitido por CORS'));
     }
   },
@@ -33,6 +38,12 @@ app.use(cors({
 }));
 
 app.options('*', cors());
+
+// Middleware de registro de solicitudes
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,7 +68,12 @@ app.get('/', (req, res) => {
 
 // Manejo de errores
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Error detallado:', {
+    mensaje: err.message,
+    pila: err.stack,
+    ruta: req.originalUrl,
+    metodo: req.method
+  });
   res.status(500).json({ 
     error: 'Error interno del servidor',
     mensaje: process.env.NODE_ENV === 'development' ? err.message : 'Error interno'
@@ -66,6 +82,7 @@ app.use((err, req, res, next) => {
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
+  console.warn(`Ruta no encontrada: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ 
     error: 'Ruta no encontrada',
     path: req.originalUrl
@@ -76,6 +93,7 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
   console.log(`Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`Orígenes CORS permitidos: ${allowedOrigins}`);
 });
 
 export default app;
