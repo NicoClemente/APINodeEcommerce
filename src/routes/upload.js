@@ -1,27 +1,22 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
 import { verifyToken, isAdmin } from '../middleware/auth.js';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+dotenv.config();
+
+// Configurar Cloudinary
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET 
+});
 
 const router = express.Router();
 
-// Configurar almacenamiento para multer
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, path.join(__dirname, '../../public/uploads/')); 
-  },
-  filename: function(req, file, cb) {
-    // Generar un nombre de archivo único para evitar conflictos
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, 'producto-' + uniqueSuffix + ext);
-  }
-});
+// Configurar multer para almacenar en memoria temporalmente
+const storage = multer.memoryStorage();
 
 // Filtro para asegurar que solo se suban imágenes
 const fileFilter = (req, file, cb) => {
@@ -39,27 +34,36 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024
+    fileSize: 5 * 1024 * 1024  // Límite de 5MB
   }
 });
 
 // Ruta para subir imágenes (protegida para administradores)
-router.post("/image", verifyToken, isAdmin, upload.single('image'), (req, res) => {
+router.post("/image", verifyToken, isAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No se ha subido ningún archivo" });
     }
 
-    // Construir la URL de la imagen
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Convertir el archivo a base64
+    const fileStr = req.file.buffer.toString('base64');
+    const fileType = req.file.mimetype;
+    const dataURI = `data:${fileType};base64,${fileStr}`;
+
+    // Subir a Cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'productos', // Opcional: carpeta donde guardar en Cloudinary
+      resource_type: 'auto' // Detectar automáticamente el tipo de recurso
+    });
 
     res.status(200).json({
       success: true,
-      imageUrl: imageUrl,
-      message: "Imagen subida correctamente"
+      imageUrl: result.secure_url,
+      publicId: result.public_id,
+      message: "Imagen subida correctamente a Cloudinary"
     });
   } catch (error) {
-    console.error("Error al subir la imagen:", error);
+    console.error("Error al subir la imagen a Cloudinary:", error);
     res.status(500).json({ error: "Error al procesar la imagen" });
   }
 });
