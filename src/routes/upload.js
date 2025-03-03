@@ -6,20 +6,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Verify Cloudinary configuration
-console.log('Cloudinary Config:', {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET ? '***' : 'MISSING'
-});
-
-// Ensure Cloudinary is configured
-if (!process.env.CLOUDINARY_CLOUD_NAME || 
-    !process.env.CLOUDINARY_API_KEY || 
-    !process.env.CLOUDINARY_API_SECRET) {
-  console.error('Cloudinary configuration is incomplete!');
-}
-
+// Cloudinary configuration
 cloudinary.config({ 
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
   api_key: process.env.CLOUDINARY_API_KEY, 
@@ -49,69 +36,69 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024  // Límite de 5MB
   }
-});
+}).single('image');
 
 // Ruta para subir imágenes (protegida para administradores)
-router.post("/image", verifyToken, isAdmin, upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No se ha subido ningún archivo" });
+router.post("/image", (req, res, next) => {
+  // Middleware manual de verificación de token
+  verifyToken(req, res, (err) => {
+    if (err) {
+      return res.status(401).json({ error: 'No autorizado' });
     }
+    
+    // Verificar rol de admin
+    isAdmin(req, res, (adminErr) => {
+      if (adminErr) {
+        return res.status(403).json({ error: 'Se requieren permisos de administrador' });
+      }
+      
+      // Usar multer para manejar la carga de archivos
+      upload(req, res, async (uploadErr) => {
+        if (uploadErr) {
+          return res.status(400).json({ error: uploadErr.message });
+        }
 
-    // Debug logging
-    console.log('Received file:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
+        try {
+          if (!req.file) {
+            return res.status(400).json({ error: "No se ha subido ningún archivo" });
+          }
 
-    // Convertir el archivo a base64
-    const fileStr = req.file.buffer.toString('base64');
-    const fileType = req.file.mimetype;
-    const dataURI = `data:${fileType};base64,${fileStr}`;
+          // Convertir el archivo a base64
+          const fileStr = req.file.buffer.toString('base64');
+          const fileType = req.file.mimetype;
+          const dataURI = `data:${fileType};base64,${fileStr}`;
 
-    // Subir a Cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'productos', 
-      resource_type: 'auto' 
-    });
+          // Subir a Cloudinary
+          const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'productos',
+            resource_type: 'auto'
+          });
 
-    res.status(200).json({
-      success: true,
-      imageUrl: result.secure_url,
-      publicId: result.public_id,
-      message: "Imagen subida correctamente a Cloudinary"
+          res.status(200).json({
+            success: true,
+            imageUrl: result.secure_url,
+            publicId: result.public_id,
+            message: "Imagen subida correctamente a Cloudinary"
+          });
+        } catch (error) {
+          console.error("Error al subir la imagen a Cloudinary:", error);
+          res.status(500).json({ 
+            error: "Error al procesar la imagen", 
+            details: error.message 
+          });
+        }
+      });
     });
-  } catch (error) {
-    // Detailed error logging
-    console.error("Error completo al subir la imagen a Cloudinary:", {
-      message: error.message,
-      stack: error.stack,
-      cloudinaryError: error
-    });
-
-    res.status(500).json({ 
-      error: "Error al procesar la imagen", 
-      details: error.message 
-    });
-  }
+  });
 });
 
-// Manejar errores de multer
+// Manejar errores generales de la ruta
 router.use((err, req, res, next) => {
-  console.error('Multer Error:', err);
-  
-  if (err instanceof multer.MulterError) {
-    // Error de multer
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: "El archivo es demasiado grande. Máximo 5MB." });
-    }
-    return res.status(400).json({ error: err.message });
-  } else if (err) {
-    // Otros errores
-    return res.status(500).json({ error: err.message });
-  }
-  next();
+  console.error('Error en ruta de upload:', err);
+  res.status(500).json({ 
+    error: "Error interno del servidor", 
+    details: err.message 
+  });
 });
 
 export default router;
