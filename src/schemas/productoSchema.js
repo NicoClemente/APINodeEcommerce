@@ -18,6 +18,10 @@ const productoSchema = new mongoose.Schema({
   imagen: { 
     type: String, 
     required: true 
+  },
+  destacado: {
+    type: Boolean,
+    default: false
   }
 }, { 
   versionKey: false 

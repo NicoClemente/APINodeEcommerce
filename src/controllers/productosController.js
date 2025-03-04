@@ -8,6 +8,7 @@ const productoSchema = Joi.object({
   descripcion: Joi.string(),
   categoria: Joi.string().required(),
   imagen: Joi.string().uri({ scheme: ['http', 'https'] }),
+  destacado: Joi.boolean().default(false)
 });
 
 class ProductosController {
@@ -35,17 +36,28 @@ class ProductosController {
   }
 
   async addProducto(req, res) {
-    const { titulo, precio, marca, categoria, descripcion, imagen } = req.body;
-    
+    const { titulo, precio, marca, categoria, descripcion, imagen, destacado } = req.body;
+
     try {
-      const validationResult = productoSchema.validate({ titulo, precio, marca, categoria, descripcion, imagen }, { abortEarly: false });
+      const validationResult = productoSchema.validate(
+        { titulo, precio, marca, categoria, descripcion, imagen, destacado },
+        { abortEarly: false }
+      );
 
       if (validationResult.error) {
         const erroresDetallados = validationResult.error.details.map((detalle) => detalle.message);
         return res.status(400).json({ error: 'Error de validación', detalles: erroresDetallados });
       }
 
-      const nuevoProducto = new Producto({ titulo, precio, categoria, marca, descripcion, imagen });
+      const nuevoProducto = new Producto({
+        titulo,
+        precio,
+        categoria,
+        marca,
+        descripcion,
+        imagen,
+        destacado: destacado || false
+      });
       const productoGuardado = await nuevoProducto.save();
       res.status(201).json(productoGuardado);
     } catch (error) {
@@ -55,10 +67,13 @@ class ProductosController {
 
   async updateProducto(req, res) {
     const { id } = req.params;
-    const { titulo, precio, marca, descripcion, categoria, imagen } = req.body;
+    const { titulo, precio, marca, descripcion, categoria, imagen, destacado } = req.body;
 
     try {
-      const validationResult = productoSchema.validate({ titulo, precio, marca, descripcion, imagen, categoria}, { abortEarly: false });
+      const validationResult = productoSchema.validate(
+        { titulo, precio, marca, descripcion, imagen, categoria, destacado },
+        { abortEarly: false }
+      );
 
       if (validationResult.error) {
         const erroresDetallados = validationResult.error.details.map((detalle) => detalle.message);
@@ -67,7 +82,7 @@ class ProductosController {
 
       const productoActualizado = await Producto.findByIdAndUpdate(
         id,
-        { titulo, precio, marca, descripcion, categoria, imagen },
+        { titulo, precio, marca, descripcion, categoria, imagen, destacado },
         { new: true }
       );
 
