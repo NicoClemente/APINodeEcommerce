@@ -90,6 +90,68 @@
       margin-bottom: 30px;
       font-size: 1.2em;
     }
+
+    .demo-credentials {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin: 25px 0;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .demo-credentials h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-credentials h3::before {
+      content: '🎮';
+      margin-right: 10px;
+    }
+
+    .credential-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 10px;
+      display: inline-block;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+
+    .frontend-link {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin: 25px 0;
+      text-decoration: none;
+      display: block;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .frontend-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+      color: white;
+      text-decoration: none;
+    }
+
+    .frontend-link h3 {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frontend-link h3::before {
+      content: '🌐';
+      margin-right: 10px;
+    }
     
     .endpoints {
       text-align: left;
@@ -176,6 +238,8 @@
     .demo-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      color: white;
+      text-decoration: none;
     }
     
     .features {
@@ -227,6 +291,11 @@
       .features {
         grid-template-columns: 1fr;
       }
+
+      .credential-item {
+        display: block;
+        margin: 5px 0;
+      }
     }
   </style>
 </head>
@@ -239,6 +308,20 @@
     
     <h1>🛒 API Ecommerce</h1>
     <p class="subtitle">API REST completa para comercio electrónico</p>
+
+    <!-- Enlace al Frontend -->
+    <a href="https://ecommerce-electronica-cs.vercel.app/" class="frontend-link">
+      <h3>Probar la Aplicación Completa</h3>
+      <p>Interfaz React con todas las funcionalidades integradas</p>
+    </a>
+
+    <!-- Credenciales de Prueba -->
+    <div class="demo-credentials">
+      <h3>Credenciales de Prueba</h3>
+      <p>Usa estas credenciales para probar la aplicación y compra simulada con Mercado Pago:</p>
+      <div class="credential-item">Usuario: prueba@test.com</div>
+      <div class="credential-item">Contraseña: Prueba1</div>
+    </div>
     
     <div class="features">
       <div class="feature auth">
