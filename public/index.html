@@ -1,50 +1,301 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Formulario de Producto</title>
-</head>
-<body>
-  <form id="productoForm">
-    <label for="titulo">Título:</label>
-    <input type="text" id="titulo" name="titulo" required><br>
-
-    <label for="precio">Precio:</label>
-    <input type="number" id="precio" name="precio" required><br>
-
-    <label for="marca">Marca:</label>
-    <input type="text" id="marca" name="marca"><br>
-
-    <label for="descripcion">Descripción:</label>
-    <textarea id="descripcion" name="descripcion"></textarea><br>
-
-    <label for="imagen">URL de la Imagen:</label>
-    <input type="text" id="imagen" name="imagen" required><br>
-
-    <button type="button" onclick="agregarProducto()">Agregar Producto</button>
-  </form>
-
-  <script>
-    async function agregarProducto() {
-      const form = document.getElementById('productoForm');
-      const formData = new FormData(form);
-
-      try {
-        const response = await fetch('http://localhost:3000/api/productos', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(Object.fromEntries(formData)),
-        });
-
-        const data = await response.json();
-        console.log(data);
-      } catch (error) {
-        console.error('Error al agregar el producto:', error);
+  <title>API Ecommerce - Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 40px;
+      max-width: 800px;
+      margin: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+      0%, 100% { background-position: 200% 0; }
+      50% { background-position: -200% 0; }
+    }
+    
+    .status {
+      display: inline-flex;
+      align-items: center;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      margin-right: 10px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 2.5em;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+    }
+    
+    .endpoints {
+      text-align: left;
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      margin: 25px 0;
+      border-left: 4px solid #667eea;
+    }
+    
+    .endpoints h3 {
+      color: #333;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .endpoints h3::before {
+      content: '🚀';
+      margin-right: 10px;
+    }
+    
+    .endpoint {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      border-left: 3px solid #667eea;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    
+    .endpoint:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .method {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+      font-size: 0.8em;
+      font-weight: bold;
+      margin-right: 10px;
+      min-width: 50px;
+      text-align: center;
+    }
+    
+    .get { background: #28a745; }
+    .post { background: #007bff; }
+    .put { background: #ffc107; color: #333; }
+    .delete { background: #dc3545; }
+    
+    .path {
+      font-family: 'Courier New', monospace;
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #495057;
+    }
+    
+    .description {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .demo-button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      margin: 10px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .demo-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .feature {
+      padding: 20px;
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      border-radius: 15px;
+      transition: transform 0.2s ease;
+    }
+    
+    .feature:hover {
+      transform: translateY(-3px);
+    }
+    
+    .feature h4 {
+      color: #333;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .feature h4::before {
+      margin-right: 8px;
+      font-size: 1.2em;
+    }
+    
+    .auth::before { content: '🔐'; }
+    .crud::before { content: '⚡'; }
+    .payment::before { content: '💳'; }
+    .upload::before { content: '📷'; }
+    
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 2em;
+      }
+      
+      .features {
+        grid-template-columns: 1fr;
       }
     }
-  </script>
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="status">
+      <div class="status-dot"></div>
+      API Activa y Funcionando
+    </div>
+    
+    <h1>🛒 API Ecommerce</h1>
+    <p class="subtitle">API REST completa para comercio electrónico</p>
+    
+    <div class="features">
+      <div class="feature auth">
+        <h4>Autenticación JWT</h4>
+        <p>Sistema seguro con roles de admin y cliente</p>
+      </div>
+      <div class="feature crud">
+        <h4>CRUD Completo</h4>
+        <p>Gestión de productos, usuarios y carritos</p>
+      </div>
+      <div class="feature payment">
+        <h4>Pagos MercadoPago</h4>
+        <p>Integración con gateway de pagos</p>
+      </div>
+      <div class="feature upload">
+        <h4>Upload Cloudinary</h4>
+        <p>Gestión de imágenes en la nube</p>
+      </div>
+    </div>
+    
+    <div class="endpoints">
+      <h3>Endpoints Principales</h3>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span>
+        <span class="path">/api/productos</span>
+        <div class="description">Obtener todos los productos (público)</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="path">/api/auth/login</span>
+        <div class="description">Iniciar sesión de usuario</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="path">/api/auth/registro</span>
+        <div class="description">Registrar nuevo usuario</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method get">GET</span>
+        <span class="path">/api/carrito</span>
+        <div class="description">Obtener carrito (requiere auth)</div>
+      </div>
+      
+      <div class="endpoint">
+        <span class="method post">POST</span>
+        <span class="path">/api/pagos/procesar</span>
+        <div class="description">Procesar pago con MercadoPago</div>
+      </div>
+    </div>
+    
+    <div style="margin-top: 30px;">
+      <a href="https://github.com/NicoClemente/APINodeEcommerce" class="demo-button" target="_blank">📝 Ver Código en GitHub</a>
+    </div>
+  </div>
 </body>
 </html>
