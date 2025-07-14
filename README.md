@@ -2,6 +2,11 @@
 
 API RESTful para una plataforma de comercio electrónico construida con Node.js, Express y MongoDB.
 
+## Credenciales de Prueba
+Para probar todas las funcionalidades:
+Email: prueba@test.com
+Contraseña: Prueba1
+
 ## 🚀 Características
 
 - Autenticación JWT con roles (admin/cliente)
