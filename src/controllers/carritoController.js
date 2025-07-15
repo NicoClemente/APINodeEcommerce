@@ -38,10 +38,13 @@ class CarritoController {
         calle: Joi.string().required(),
         ciudad: Joi.string().required(),
         codigoPostal: Joi.string().required(),
-        telefono: Joi.number().required(),
-        instrucciones: Joi.string(),
+        telefono: Joi.alternatives().try(
+          Joi.number(),
+          Joi.string()
+        ).required(),
+        instrucciones: Joi.string().allow('').optional(),
       }).required(),
-        total: Joi.number().required(),
+      total: Joi.number().required(),
     });
 
     try {
